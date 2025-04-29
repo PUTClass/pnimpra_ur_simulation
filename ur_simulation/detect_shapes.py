@@ -10,13 +10,13 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import PointCloud2
 import threading
 
-def mark_nongray_area(image, min_val = 0, max_val = 255, gray_factor=0.1):
-    gray_tolerance = (max_val-min_val)*gray_factor
-    color_dev = np.max(image, axis=2) - np.min(image, axis=2)
-    img_dims = np.shape(image)[:2]
-
-    mask = np.where(color_dev <= gray_tolerance, np.zeros(img_dims), np.ones(img_dims))
-    mask = mask.astype(np.float32)
+def mark_nongray_area():
+    mask = None
+    ### Write a custom function to extract binary mask based on colours.
+    ### Each pixel consists of RGB elements. It might be assumed that
+    ### all gray pixel components are either equal or they are within a narrow range.
+    ### In the final mask: 1 - objects, 0 - background
+    ### Hint: numpy arrays can be converted to float32 -> mask.astype(np.float32)
     return mask
 
 class DetectShapes(Node):
@@ -42,13 +42,13 @@ class DetectShapes(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    vp_node = DetectShapes()
+    ds_node = DetectShapes()
 
-    thread = threading.Thread(target=rclpy.spin, args=(vp_node,), daemon=True)
+    thread = threading.Thread(target=rclpy.spin, args=(ds_node,), daemon=True)
     thread.start()
-    vp_node.run()
+    ds_node.run()
 
-    vp_node.destroy_node()
+    ds_node.destroy_node()
     rclpy.shutdown()
     thread.join()
 

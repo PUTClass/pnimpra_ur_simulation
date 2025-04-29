@@ -29,37 +29,22 @@ from rclpy.clock_type import ClockType
 import threading
 
 def find_closest_point(origin, points):
-    relative_points = points - origin
-    distances = np.linalg.norm(relative_points, axis=-1)
-    min_id = np.argmin(distances)
-    return points[min_id]
+    closest_point = None
+    ### Find the closest point from the origin point.
+    ### The closest point is determined given the Euclidean distance from all points to the origin point.
+    ### You can use np.linalg.norm function to calculate the Frobenius norm (square of Euclidean distance)
+    ### Finding the minimum in a data structure can be also realized with numpy.
+    ### All of the above functions are optional and you can use simple loops to find the closest point.
+    return closest_point
 
 def apply_mask_to_points(points, mask):
-    points = np.reshape(points, (-1, 3))
-    mask = np.reshape(mask, (-1,))
-    non_zero_idx = np.nonzero(mask)
-    return points[non_zero_idx]
+    points = None
+    ### point and mask are data structures with the same amount of data points
+    ### Corresponding pixels from the mask can be used to create a new list of points, where
+    ### only objects are visible
+    ### np.nonzero(x) returns indices of all nonzero values in x. It might be used to avoid loop functions.
+    return points
 
-def quaternion_from_euler(roll, pitch, yaw):
-    """
-    Converts euler roll, pitch, yaw to quaternion (w in last place)
-    quat = [x, y, z, w]
-    Bellow should be replaced when porting for ROS 2 Python tf_conversions is done.
-    """
-    cy = np.cos(yaw * 0.5)
-    sy = np.sin(yaw * 0.5)
-    cp = np.cos(pitch * 0.5)
-    sp = np.sin(pitch * 0.5)
-    cr = np.cos(roll * 0.5)
-    sr = np.sin(roll * 0.5)
-
-    q = [0] * 4
-    q[0] = cy * cp * cr + sy * sp * sr
-    q[1] = cy * cp * sr - sy * sp * cr
-    q[2] = sy * cp * sr + cy * sp * cr
-    q[3] = sy * cp * cr - cy * sp * sr
-
-    return q
 
 class ClosestObjects(Node):
     def __init__(self):
@@ -109,7 +94,8 @@ class ClosestObjects(Node):
         t.transform.translation.x = float(point[0])
         t.transform.translation.y = float(point[1])
         t.transform.translation.z = float(point[2])
-
+        
+        ### Hard-coded quaternion rotation to assign a reachable orientation to 'closest_point' TF
         q_x = quaternion_from_euler(0.0,  0.0, np.pi/2)
         q_y = quaternion_from_euler(0.0, np.pi/2, 0.0)
 
@@ -120,18 +106,14 @@ class ClosestObjects(Node):
         t.transform.rotation.z = q[2]
         t.transform.rotation.w = q[3]
 
-        # t.transform.rotation.x = 0.0
-        # t.transform.rotation.y = 0.0
-        # t.transform.rotation.z = 0.0
-        # t.transform.rotation.w = 1.0
-
         self.tf_broadcaster.sendTransform(t)
 
     def publish_objects_pcl(self, points, frame_id):
-        header = Header()
-        header.frame_id = frame_id
-        header.stamp = self.get_clock().now().to_msg()
-        pc2 = create_cloud_xyz32(header, points)
+        pc2 = None
+        ### Create a point cloud with objects.
+        ### You can use create_cloud_xyz32(header: Header, points: Iterable) function to create a PointCloud2
+        ### structure. The header must be filled with a correct name of a transform from TF tree and a timestamp.
+        ### self.get_clock().now().to_msg() denoted a present moment in time.
         self.point_cloud_publisher.publish(pc2)
     
 
@@ -140,15 +122,11 @@ class ClosestObjects(Node):
            if self.mask is not None and self.pcl is not None:
 
                 points = read_points_numpy(self.pcl, skip_nans=False, field_names=['x', 'y', 'z'])
-                self.get_logger().info(f"Points shape {points.shape}")
 
-                object_points = apply_mask_to_points(points, self.mask)
-
-                closest_point = find_closest_point(origin=np.array([0.0, 0.0, 0.0]), points=object_points)
-                self.get_logger().info(f"Closest point {closest_point}")
-                self.send_transform(closest_point, 'closest_point', 'camera_link')
-
-                self.publish_objects_pcl(object_points, 'camera_link')
+                # object_points = apply_mask_to_points(points, self.mask)
+                # closest_point = find_closest_point(o)
+                # self.send_transform(closest_point, 'closest_point', 'some_transform')
+                # self.publish_objects_pcl(object_points, 'camera_link')
                 self.mask, self.pcl = None, None
 
 
